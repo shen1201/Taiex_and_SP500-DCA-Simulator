@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球大盤定期定額模擬器 (台股 vs 美股S&P500)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 25px;
+            border-radius: 14px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 市場切換按鈕區 */
+        .market-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .btn-market {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #cbd5e1;
+            background-color: white;
+            color: #64748b;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-market:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        .btn-market.active {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0f172a;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .panel-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 900px) {
+            .panel-grid { grid-template-columns: 1fr; }
+        }
+        .control-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2563eb;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 5px;
+        }
+        .form-group {
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background-color: white;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #2563eb;
+        }
+        .btn-calc {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .btn-calc:hover { background: #1e293b; }
+        
+        .result-board {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .result-box {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-box div:first-child { font-size: 13px; color: #64748b; }
+        .result-box div:last-child { font-size: 16px; font-weight: bold; }
+
+        .chart-container {
+            position: relative;
+            height: 580px;
+            width: 100%;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .loading-box {
+            text-align: center;
+            font-size: 18px;
+            color: #64748b;
+            margin-top: 120px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="market-switcher">
+        <button class="btn-market active" onclick="switchMarket('tw')">🇹🇼 台灣加權指數 (TAIEX)</button>
+        <button class="btn-market" onclick="switchMarket('us')">🇺🇸 美股標普 500 (S&P 500)</button>
+    </div>
+
+    <h1 id="pageTitle">🇹🇼 台灣加權指數定期定額模擬器</h1>
+    
+    <div id="loading" class="loading-box">正在下載歷史數據，首次載入需時 1-2 秒...</div>
+    
+    <div class="panel-grid" id="mainContent" style="display: none;">
+        <div class="control-card">
+            <div>
+                <div class="card-title">⚙️ 條件與區間設定</div>
+                
+                <div class="form-group">
+                    <label>選擇投資時間區間：</label>
+                    <div class="date-range">
+                        <input type="month" id="startMonth" min="2000-01" value="2023-02">
+                        <input type="month" id="endMonth" value="2024-09">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label id="amountLabel">每月定期定額金額 (新台幣)：</label>
+                    <input type="number" id="investAmount" value="10000" min="1000" step="1000">
+                </div>
+
+                <div class="form-group">
+                    <label>每月固定扣款日：</label>
+                    <select id="investDay">
+                        <option value="1">1 號 (或次一交易日)</option>
+                        <option value="5">5 號 (或次一交易日)</option>
+                        <option value="10">10 號 (或次一交易日)</option>
+                        <option value="15">15 號 (或次一交易日)</option>
+                        <option value="20">20 號 (或次一交易日)</option>
+                    </select>
+                </div>
+
+                <button class="btn-calc" id="calcBtn">開始模擬計算</button>
+            </div>
+
+            <div>
+                <div class="card-title" style="margin-top: 25px;">實戰投資成果看版</div>
+                <div class="result-board">
+                    <div class="result-box">
+                        <div>累計投入本金</div>
+                        <div id="resPrincipal" style="color: #0f172a;">$0</div>
+                    </div>
+                    <div class="result-box">
+                        <div>期末總資產</div>
+                        <div id="resTotalValue">$0</div>
+                    </div>
+                    <div class="result-box">
+                        <div>最終投資報酬率</div>
+                        <div id="resROI">0.00%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="taiexChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+// 市場設定儲存物件
+const CONFIG = {
+    tw: { ticker: "^TWII", name: "台灣加權指數", currency: "新台幣", defaultColor: "#2563eb", lightColor: "rgba(37, 99, 235, 0.03)" },
+    us: { ticker: "^GSPC", name: "美股 S&P 500", currency: "美元", defaultColor: "#ea580c", lightColor: "rgba(234, 88, 12, 0.03)" }
+};
+
+let currentMarket = "tw"; // 目前市場
+let marketDataCache = { tw: [], us: [] }; // 緩存日K線資料
+let myChart = null;
+
+// 初始化時間參數 (2000年到今天)
+const startTime = Math.floor(new Date("2000-01-01").getTime() / 1000);
+const endTime = Math.floor(new Date().getTime() / 1000);
+const proxyUrl = "https://corsproxy.io/?"; 
+
+// 一次把兩個市場的資料都抓下來，切換時就不用重新連線
+async function initializeAllData() {
+    try {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+        
+        await Promise.all([
+            fetchMarketData('tw'),
+            fetchMarketData('us')
+        ]);
+        
+        // 設定日曆最大值
+        const latestDate = marketDataCache.tw[marketDataCache.tw.length - 1];
+        const maxMonthStr = `${latestDate.year}-${String(latestDate.month).padStart(2, '0')}`;
+        document.getElementById('endMonth').max = maxMonthStr;
+        document.getElementById('startMonth').max = maxMonthStr;
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'grid';
+        
+        runSimulation();
+    } catch (error) {
+        console.error("初始化資料失敗:", error);
+        document.getElementById('loading').innerText = "數據下載失敗，可能代理伺服器忙碌，請刷新網頁重試。";
+    }
+}
+
+async function fetchMarketData(marketKey) {
+    const targetTicker = CONFIG[marketKey].ticker;
+    const apiUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${targetTicker}?period1=${startTime}&period2=${endTime}&interval=1d`;
+    
+    const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+    const json = await response.json();
+    
+    const chartData = json.chart.result[0];
+    const timestamps = chartData.timestamp;
+    const closes = chartData.indicators.quote[0].close;
+    
+    timestamps.forEach((ts, index) => {
+        const date = new Date(ts * 1000);
+        const price = closes[index];
+        
+        if (price !== null && price !== undefined) {
+            marketDataCache[marketKey].push({
+                date: date,
+                year: date.getFullYear(),
+                month: date.getMonth() + 1,
+                day: date.getDate(),
+                fullDateStr: `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
+                monthKey: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+                price: Math.round(price * 100) / 100
+            });
+        }
+    });
+}
+
+// 切換市場的 Button 觸發事件
+function switchMarket(marketKey) {
+    if (currentMarket === marketKey) return;
+    currentMarket = marketKey;
+    
+    // 更新按鈕樣式
+    document.querySelectorAll('.btn-market').forEach(btn => btn.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    // 更新介面文字與標題
+    const cfg = CONFIG[marketKey];
+    document.getElementById('pageTitle').innerText = `${cfg.name}定期定額模擬器`;
+    document.getElementById('amountLabel').innerText = `每月定期定額金額 (${cfg.currency})：`;
+    
+    // 重新跑模擬並繪圖
+    runSimulation();
+}
+
+function runSimulation() {
+    const startMonth = document.getElementById('startMonth').value;
+    const endMonth = document.getElementById('endMonth').value;
+    const monthlyAmount = parseFloat(document.getElementById('investAmount').value) || 10000;
+    const targetDay = parseInt(document.getElementById('investDay').value);
+    
+    if (startMonth > endMonth) {
+        alert("開始月份不能大於結束月份！");
+        return;
+    }
+
+    const currentRawData = marketDataCache[currentMarket];
+    const filteredData = currentRawData.filter(d => d.monthKey >= startMonth && d.monthKey <= endMonth);
+    
+    if (filteredData.length === 0) {
+        alert("該區間查無有效歷史交易數據！");
+        return;
+    }
+
+    let totalShares = 0;
+    let totalPrincipal = 0;
+    let lastProcessedMonthKey = ""; 
+
+    const labels = [];
+    const marketReturns = [];
+    const dcaReturns = [];
+    const pointRadiusStyles = [];
+    const pointBackgroundColors = [];
+    
+    const basePrice = filteredData[0].price;
+
+    filteredData.forEach(dayPoint => {
+        let isInvestDay = false;
+
+        // 定期定額扣款
+        if (dayPoint.monthKey !== lastProcessedMonthKey && dayPoint.day >= targetDay) {
+            totalPrincipal += monthlyAmount;
+            totalShares += (monthlyAmount / dayPoint.price);
+            lastProcessedMonthKey = dayPoint.monthKey;
+            isInvestDay = true;
+        }
+
+        labels.push(dayPoint.fullDateStr);
+        
+        // 1. 純大盤持有漲跌幅
+        const mktRet = (((dayPoint.price - basePrice) / basePrice) * 100).toFixed(2);
+        marketReturns.push(mktRet);
+
+        // 2. 定期定額即時報酬率
+        const currentPortfolioValue = totalShares * dayPoint.price;
+        let dcaRet = 0;
+        if (totalPrincipal > 0) {
+            dcaRet = (((currentPortfolioValue - totalPrincipal) / totalPrincipal) * 100).toFixed(2);
+        }
+        dcaReturns.push(dcaRet);
+
+        // 買進日標記
+        if (isInvestDay) {
+            pointRadiusStyles.push(5);
+            pointBackgroundColors.push('#dc2626'); // 扣款日統一用顯眼紅點標記
+        } else {
+            pointRadiusStyles.push(0);
+            pointBackgroundColors.push(CONFIG[currentMarket].defaultColor);
+        }
+    });
+
+    // 計算期末總結
+    const finalPrice = filteredData[filteredData.length - 1].price;
+    const finalValue = totalShares * finalPrice;
+    const finalROI = (((finalValue - totalPrincipal) / totalPrincipal) * 100).toFixed(2);
+
+    const cfg = CONFIG[currentMarket];
+    document.getElementById('resPrincipal').innerText = `$${Math.round(totalPrincipal).toLocaleString()} ${cfg.currency}`;
+    document.getElementById('resTotalValue').innerText = `$${Math.round(finalValue).toLocaleString()} ${cfg.currency}`;
+    document.getElementById('resROI').innerText = `${finalROI}%`;
+    
+    // 台股/美股表現顏色（正紅負綠）
+    const themeColor = finalROI >= 0 ? '#dc2626' : '#16a34a';
+    document.getElementById('resROI').style.color = themeColor;
+    document.getElementById('resTotalValue').style.color = themeColor;
+
+    renderChart(labels, marketReturns, dcaReturns, pointRadiusStyles, pointBackgroundColors, filteredData);
+}
+
+function renderChart(labels, marketData, dcaData, radiusStyles, bgColors, originalData) {
+    const ctx = document.getElementById('taiexChart').getContext('2d');
+    
+    if (myChart) {
+        myChart.destroy();
+    }
+
+    const currentCfg = CONFIG[currentMarket];
+
+    myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: `${currentCfg.name} 大盤持有漲跌幅 (%)`,
+                    data: marketData,
+                    borderColor: '#cbd5e1',
+                    borderWidth: 1.5,
+                    borderDash: [4, 4],
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: `定期定額投資報酬率 (%)`,
+                    data: dcaData,
+                    borderColor: currentCfg.defaultColor, // 台股用藍色，美股用橘色做區隔
+                    backgroundColor: currentCfg.lightColor,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: radiusStyles, 
+                    pointBackgroundColor: bgColors,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointHoverRadius: 7
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            const index = context.dataIndex;
+                            const pct = context.raw;
+                            if (context.datasetIndex === 0) {
+                                return ` 大盤表現: ${pct}% (收盤價: ${originalData[index].price})`;
+                            } else {
+                                const isBuyDay = radiusStyles[index] > 0;
+                                const buyTag = isBuyDay ? " 🔴【固定扣款日】" : " ";
+                                return `${buyTag}您的投報率: ${pct}%`;
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
+                y: {
+                    ticks: { callback: function(value) { return value + '%'; } },
+                    grid: { color: '#f1f5f9' }
+                }
+            }
+        }
+    });
+}
+
+// 綁定按鈕
+document.getElementById('calcBtn').addEventListener('click', runSimulation);
+
+// 啟動：撈取兩大市場全歷史資料
+initializeAllData();
+</script>
+
+</body>
+</html>
