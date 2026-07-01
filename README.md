@@ -34,28 +34,3 @@
 1. 將本專案的程式碼複製到本地端。
 2. 建立 `index.html` 並將網頁原始碼貼入。
 3. 直接使用瀏覽器（如 Chrome, Edge）雙擊打開 `index.html` 即可開始使用！
-
----
-
-## 📦 GitHub 終端機快速部署指令
-
-如果你想在本地端修改程式碼後，直接使用 Bash 終端機一腳把變更踢上 GitHub，可以使用以下標準指令流：
-
-```bash
-# 1. 初始化 Git 儲存庫
-git init
-
-# 2. 將說明文件與網頁檔案加入暫存區
-git add README.md index.html
-
-# 3. 提交變更並說明身分
-git commit -m "feat: 實作全球雙市場自訂區間定期定額模擬器"
-
-# 4. 強制將本地預設分支名稱命名為 main
-git branch -M main
-
-# 5. 綁定遠端 GitHub 儲存庫網址
-git remote add origin [https://github.com/你的帳號/Taiex_and_SP500-DCA-Simulator.git](https://github.com/你的帳號/Taiex_and_SP500-DCA-Simulator.git)
-
-# 6. 強制推送到遠端專案的 main 分支
-git push -u origin main
