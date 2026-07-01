@@ -5,7 +5,7 @@
 ---
 
 ## 🚀 線上展示 (Demo)
-* 專案網址： `https://<你的GitHub帳號>.github.io/Taiex_and_SP500-DCA-Simulator/`
+* 專案網址： [點擊](https://shen1201.github.io/Taiex_and_SP500-DCA-Simulator/)
 
 ---
 
