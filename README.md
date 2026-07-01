@@ -1,1 +1,61 @@
-# Taiex_and_SP500-DCA-Simulator
+# 🌍 全球大盤定期定額模擬器 (Global Market DCA Simulator)
+
+一個基於前端技術開發的動態投資模擬工具，支援 **台灣加權指數 (TAIEX)** 與 **美國標普 500 指數 (S&P 500)**。使用者可以自由自訂任意歷史時間區間，動態觀察「單筆投入大盤」與「每月定期定額」的即時投報率對比，並在圖表上精準標記出每個月的扣款買進點。
+
+---
+
+## 🚀 線上展示 (Demo)
+* 專案網址： `https://<你的GitHub帳號>.github.io/Taiex_and_SP500-DCA-Simulator/`
+
+---
+
+## ✨ 核心特色
+
+- **雙市場一鍵切換**：整合台股 (`^TWII`) 與美股 S&P 500 (`^GSPC`)，切換流暢無需重新整理網頁。
+- **免 Key 即時數據**：直接呼叫 Yahoo Finance 公開 API，獲取自 2000 年至今最真實的日 K 線歷史數據。
+- **自訂時間區間**：打破傳統只能選單一年度的限制，支援跨年度、任意月份區間（例如：2023年2月至2024年9月）的模擬。
+- **實戰扣款日模擬**：可自由設定每月 1、5...20 號扣款。若遇假日，程式會聰明地**自動遞延至下一交易日**計算。
+- **圖面點位標記 (Milestones)**：在折線圖上以 **紅色圓點** 直觀標記出每個月的實際扣款日，方便觀察「微笑曲線」的平均成本效應。
+- **純前端架構**：完全無需後端 Server，單一 HTML 檔案結合 Chart.js 即可完美運行。
+
+---
+
+## 🛠️ 開發與使用技術
+
+- **前端核心**：HTML5 / CSS3 / JavaScript (Vanilla JS)
+- **資料庫/API**：Yahoo Finance Chart API
+- **圖表繪製**：Chart.js (v4.x)
+- **跨網域處理**：Corsproxy.io 代理轉發
+
+---
+
+## 💻 本地開發與運行
+
+1. 將本專案的程式碼複製到本地端。
+2. 建立 `index.html` 並將網頁原始碼貼入。
+3. 直接使用瀏覽器（如 Chrome, Edge）雙擊打開 `index.html` 即可開始使用！
+
+---
+
+## 📦 GitHub 終端機快速部署指令
+
+如果你想在本地端修改程式碼後，直接使用 Bash 終端機一腳把變更踢上 GitHub，可以使用以下標準指令流：
+
+```bash
+# 1. 初始化 Git 儲存庫
+git init
+
+# 2. 將說明文件與網頁檔案加入暫存區
+git add README.md index.html
+
+# 3. 提交變更並說明身分
+git commit -m "feat: 實作全球雙市場自訂區間定期定額模擬器"
+
+# 4. 強制將本地預設分支名稱命名為 main
+git branch -M main
+
+# 5. 綁定遠端 GitHub 儲存庫網址
+git remote add origin [https://github.com/你的帳號/Taiex_and_SP500-DCA-Simulator.git](https://github.com/你的帳號/Taiex_and_SP500-DCA-Simulator.git)
+
+# 6. 強制推送到遠端專案的 main 分支
+git push -u origin main
